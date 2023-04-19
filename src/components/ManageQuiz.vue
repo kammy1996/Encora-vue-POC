@@ -78,6 +78,15 @@ import AddQuestion from '@/components/AddQuestion.vue';
 import CommonAlert from '@/components/CommonAlert.vue'
 
 
+import { useRouter } from 'vue-router';
+const router = useRouter();
+
+import { useStore } from 'vuex';
+const store = useStore();
+
+
+
+
 interface Alert {
     isTrue: boolean,
     color: string,
@@ -136,7 +145,7 @@ function questionSaved(val) {
 }
 
 
-const saveQuiz = () => { 
+const saveQuiz = async () => { 
     // check if quiz title is given 
     if(!quiz.title || quiz.title == '') { 
         alert.isTrue = true;
@@ -150,30 +159,23 @@ const saveQuiz = () => {
         alert.text = 'Please enter atleast one Question.'
     }
 
-    //If everything is fine 
+    let status = await store.dispatch(`addQuiz`, quiz)
 
-    let arr = [];
+    if(status == 201) { 
+        alert.isTrue = true;
+        alert.color = 'green';
+        alert.text = 'Quiz Saved Successfully.'
 
-    if(window.localStorage.getItem(`quizzes`)){
-        let existingQuizzes = window.localStorage.getItem(`quizzes`)
-        arr = JSON.parse(existingQuizzes)
-        arr.push(quiz)
-        window.localStorage.setItem(`quizzes`, JSON.stringify(arr))
-    } else { 
-        arr.push(quiz)
-        window.localStorage.setItem(`quizzes`, JSON.stringify(arr));
+          //Clearing quiz values after saving
+        setTimeout(() => {
+            quiz.title =  ''
+            quiz.level = 'Easy'
+            quiz.questions = []
+
+            router.push('/')
+        }, 1000);
     }
 
-    alert.isTrue = true;
-    alert.color = 'green';
-    alert.text = 'Quiz Saved Successfully.'
-
-    //Clearing quiz values after saving
-    setTimeout(() => {
-        quiz.title =  ''
-        quiz.level = 'Easy'
-        quiz.questions = []
-    }, 500);
 }
 
 

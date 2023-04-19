@@ -32,7 +32,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody >
                     <tr v-for="(quiz, index) in quizList" :key="index">
                         <td>{{ index + 1 }}</td>
                         <td>{{ quiz.title }}</td>
@@ -69,7 +69,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
+import { useStore } from 'vuex';
+
+const store = useStore();
+
+async function getQuizList() { 
+    await store.dispatch(`getQuizList`)
+}
+
+getQuizList()
+
+const quizList = computed(() => {
+    return store.getters[`getQuizList`];
+});
+
 
 let actionOptions: Array<object> = reactive([
     {
@@ -95,13 +109,6 @@ let actionOptions: Array<object> = reactive([
     }
 ]);
 
-//Getting list of quizzes
-let quizList: Array<object> = reactive([])
-
-let stringed = window.localStorage.getItem(`quizzes`)
-if (stringed) {
-    quizList = JSON.parse(stringed)
-}
 
 
 // Managing Quiz Actions 
