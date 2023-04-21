@@ -15,6 +15,11 @@ const router = createRouter({
       name: 'ManageQuiz',
       component: ManageQuiz
     },
+    {
+      path: '/manage/:id',
+      name: 'EditQuiz',
+      component: ManageQuiz
+    },
   ]
 })
 

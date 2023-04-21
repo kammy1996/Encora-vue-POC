@@ -11,6 +11,8 @@
                 <v-divider></v-divider>
 
                 <v-container>
+                    <h2>{{ selectedQuestion  }}</h2>
+
                     <div class="mt-5">
                         <v-list-subheader>Question</v-list-subheader>
                         <v-text-field v-model="question.question" label="Enter your Question" variant="outlined"
@@ -75,13 +77,19 @@
 
 <script setup lang="ts">
 import { defineProps, reactive, defineEmits } from 'vue';
-import CommonAlert from '@/components/CommonAlert.vue'
+import CommonAlert from '@/components/Common/CommonAlert.vue'
 
-const props = defineProps<{
-    show: boolean
-}>();
+
+
+const props = defineProps({
+    show: Boolean,
+    mode: String,
+    selectedQuestion : Object
+});
+
 
 const emit = defineEmits([`close-dialog`, `save-question`])
+
 
 
 interface Alert {
@@ -98,19 +106,22 @@ const alert: Alert = reactive({
 })
 
 //Questions interface 
-interface Question {
-    id: number;
-    question: string;
-    options: Array<object>;
-    correctOption: number;
-}
+// interface Question {
+//     id: number;
+//     question: string;
+//     options: Array<object>;
+//     correctOption: number;
+// }
 
-const question: Question = reactive({
+let question = reactive({
     id: null,
     question: '',
     options: [],
     correctOption: null
 })
+
+
+
 
 
 //Options Interface
@@ -161,7 +172,6 @@ function saveQuestion() {
 
     emit(`save-question`, question)
     emit(`close-dialog`)
-
 
     setTimeout(() => {
         question.correctOption = null;

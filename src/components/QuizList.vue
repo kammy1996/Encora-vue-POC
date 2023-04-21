@@ -1,6 +1,5 @@
 <template>
     <div>
-
         <v-row class=" mt-5">
             <v-col cols="9">
                 <h2 class="mt-3">Quiz List</h2>
@@ -32,7 +31,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody >
+                <tbody>
                     <tr v-for="(quiz, index) in quizList" :key="index">
                         <td>{{ index + 1 }}</td>
                         <td>{{ quiz.title }}</td>
@@ -45,12 +44,8 @@
                                 </template>
 
                                 <v-list>
-                                    <v-list-item 
-                                        :value="item" 
-                                        density="compact" 
-                                        border v-for="(item, i) in actionOptions"
-                                        @click="optionSelected(item)"
-                                        class="py-2"
+                                    <v-list-item :value="item" density="compact" border v-for="(item, i) in actionOptions"
+                                        @click="optionSelected(item, quiz)" class="py-2"
                                         :style="[item.id == actionOptions[0].id ? 'border-top:0px' : '',
                                         item.id == actionOptions[actionOptions.length - 1].id ? 'border-bottom:0px' : '']" :key="i">
                                         <v-list-item-title>
@@ -65,23 +60,48 @@
                 </tbody>
             </v-table>
         </div>
+        <WarningDialogue :show="isWarningDialogue" @delete-quiz="deleteQuiz" @close-dialog="isWarningDialogue = false" />
+        <CommonAlert :alert="alert" />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
-import { useStore } from 'vuex';
+import { defaultStore } from '@/stores/default';
+import CommonAlert from '@/components/Common/CommonAlert.vue';
+import WarningDialogue from '@/components/Common/WarningDialogue.vue'
+import { useRouter } from 'vue-router';
 
-const store = useStore();
 
-async function getQuizList() { 
-    await store.dispatch(`getQuizList`)
+const store = defaultStore();
+let isWarningDialogue = ref(false)
+
+const router = useRouter();
+
+let selectedQuiz = reactive({})
+
+interface Alert {
+    isTrue: boolean,
+    color: string,
+    text?: string,
+}
+
+const alert: Alert = reactive({
+    isTrue: false,
+    color: '',
+    text: '',
+    title: ''
+})
+
+
+async function getQuizList() {
+    await store.fetchQuizList()
 }
 
 getQuizList()
 
 const quizList = computed(() => {
-    return store.getters[`getQuizList`];
+    return store.getQuizList;
 });
 
 
@@ -112,14 +132,32 @@ let actionOptions: Array<object> = reactive([
 
 
 // Managing Quiz Actions 
-let optionSelected = (item) => { 
-    if(item.value === 'edit') {
-
-    } else if(item.value === 'delete') {
-
-    } else if(item.value === 'play') {
-
+let optionSelected = (item: string, quiz: object) => {
+    selectedQuiz = quiz;
+    if (item.value === 'edit') {
+        router.push(`/manage/${quiz.id}`)
+    } else if (item.value === 'delete') {
+        isWarningDialogue.value = true;
     }
+}
+
+async function deleteQuiz() {
+    let response = await store.deleteQuiz(selectedQuiz)
+    if (response === 204) {
+        isWarningDialogue.value = false;
+
+        alert.isTrue = true;
+        alert.color = 'green';
+        alert.text = 'Quiz deleted Successfully.'
+
+        getQuizList();
+
+    } else {
+        alert.isTrue = true;
+        alert.color = 'green';
+        alert.text = 'Something went wrong.'
+    }
+
 }
 
 </script>

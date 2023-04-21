@@ -51,11 +51,30 @@
                     <tr v-for="question in quiz.questions" :key="question.id">
                         <td>{{ question.question }}</td>
                         <td>{{ question.options.length }}</td>
+                        <td>
+                            <v-menu>
+                                <template v-slot:activator="{ props }">
+                                    <v-btn variant="text" icon="mdi-dots-vertical" v-bind="props"></v-btn>
+                                </template>
+
+                                <v-list>
+                                    <v-list-item :value="item" density="compact" border v-for="(item, i) in actionOptions"
+                                        @click="optionSelected(item,question)" class="py-2"
+                                        :style="[item.id == actionOptions[0].id ? 'border-top:0px' : '',
+                                        item.id == actionOptions[actionOptions.length - 1].id ? 'border-bottom:0px' : '']" :key="i">
+                                        <v-list-item-title>
+                                            <v-icon :icon="item.icon" class="mr-2 mt-n2" color="deep-purple "></v-icon>
+                                            <span>{{ item.name }}</span>
+                                        </v-list-item-title>
+                                    </v-list-item>
+                                </v-list>
+                            </v-menu>
+                        </td>
                     </tr>
                 </tbody>
             </v-table>
         </div>
-        <div class="action-btns">
+        <div class="action-btns" v-if="quiz.questions.length > 0">
             <v-btn prepend-icon="mdi-check" color="success" class="mr-5" @click="saveQuiz">
                 Save
             </v-btn>
@@ -65,6 +84,8 @@
         </div>
         <AddQuestion 
             :show="isQuestionDrawer" 
+            :mode="mode"
+            :selectedQuestion = "selectedQuestion"
             @close-dialog="isQuestionDrawer = false" 
             @save-question="questionSaved" />
         <CommonAlert :alert="alert" />
@@ -75,16 +96,31 @@
 import { reactive } from 'vue';
 import { ref } from 'vue';
 import AddQuestion from '@/components/AddQuestion.vue';
-import CommonAlert from '@/components/CommonAlert.vue'
-
-
+import CommonAlert from '@/components/Common/CommonAlert.vue'
+import  { defaultStore }  from '@/stores/default';
 import { useRouter } from 'vue-router';
+import { useRoute } from 'vue-router'
+
+
 const router = useRouter();
+const route = useRoute();
+const store = defaultStore();
 
-import { useStore } from 'vuex';
-const store = useStore();
 
 
+if(route.params.id) { 
+     getQuizById(route.params.id) 
+}
+
+async function getQuizById() { 
+    let response  = await store.getQuiz(route.params.id)
+    if(response && response.length > 0) { 
+        quiz.title = response[0].title;
+        quiz.questions = response[0].questions;
+        quiz.level = response[0].level;
+    }
+    console.log("🚀 ~ file: ManageQuiz.vue:97 ~ getQuizById ~ response:", response)
+}
 
 
 interface Alert {
@@ -117,13 +153,30 @@ const levels = [
     }
 ];
 
+let actionOptions: Array<object> = reactive([
+    {
+        id: 1,
+        name: 'Edit',
+        value: 'edit',
+        icon: 'mdi-pencil',
+        path: '/manage'
+    },
+    {
+        id: 2,
+        name: 'Delete',
+        value: 'delete',
+        icon: 'mdi-delete'
+
+    },
+]);
+
 interface Quiz {
     title: string;
     level: string;
     questions: Array<object>;
 }
 
-const quiz: Quiz = reactive({
+let quiz: Quiz = reactive({
     title: '',
     level: 'Easy',
     questions: [],
@@ -144,6 +197,26 @@ function questionSaved(val) {
     quiz.questions.push(copy)
 }
 
+let mode = ref(`create`);
+
+let selectedQuestion = reactive({
+    id:null,
+    options:[],
+    correctOption : null,
+    question : ''
+})
+
+let optionSelected = (item: string, question:object) => {
+    
+    selectedQuestion = question;
+    if (item.value === 'edit') {
+        isQuestionDrawer.value = true;
+        mode.value = 'edit'
+    } else if (item.value === 'delete') {
+
+    }
+}
+
 
 const saveQuiz = async () => { 
     // check if quiz title is given 
@@ -159,7 +232,7 @@ const saveQuiz = async () => {
         alert.text = 'Please enter atleast one Question.'
     }
 
-    let status = await store.dispatch(`addQuiz`, quiz)
+    let status = await store.addQuiz(quiz)
 
     if(status == 201) { 
         alert.isTrue = true;
