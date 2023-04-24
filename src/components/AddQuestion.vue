@@ -11,8 +11,6 @@
                 <v-divider></v-divider>
 
                 <v-container>
-                    <h2>{{ selectedQuestion  }}</h2>
-
                     <div class="mt-5">
                         <v-list-subheader>Question</v-list-subheader>
                         <v-text-field v-model="question.question" label="Enter your Question" variant="outlined"
@@ -76,9 +74,8 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, reactive, defineEmits } from 'vue';
+import { defineProps, reactive, defineEmits, watch } from 'vue';
 import CommonAlert from '@/components/Common/CommonAlert.vue'
-
 
 
 const props = defineProps({
@@ -89,7 +86,6 @@ const props = defineProps({
 
 
 const emit = defineEmits([`close-dialog`, `save-question`])
-
 
 
 interface Alert {
@@ -106,22 +102,17 @@ const alert: Alert = reactive({
 })
 
 //Questions interface 
-// interface Question {
-//     id: number;
-//     question: string;
-//     options: Array<object>;
-//     correctOption: number;
-// }
+interface Question {
+    question: string;
+    options: Array<object>;
+    correctOption: number;
+}
 
-let question = reactive({
-    id: null,
+let question : Question = reactive({
     question: '',
     options: [],
     correctOption: null
 })
-
-
-
 
 
 //Options Interface
@@ -170,8 +161,12 @@ function saveQuestion() {
         alert.text = 'Please Enter a valid question.'
     }
 
-    emit(`save-question`, question)
-    emit(`close-dialog`)
+
+    if(props.mode === 'edit') { 
+        emit(`update-question`, question)
+    } else { 
+        emit(`save-question`, question)
+    }
 
     setTimeout(() => {
         question.correctOption = null;
@@ -179,6 +174,8 @@ function saveQuestion() {
         question.options = [];
         question.question = ''   
     }, 2000);
+    emit(`close-dialog`)
+  
 }
 
 
@@ -186,7 +183,21 @@ function questionCancelled() {
     emit(`close-dialog`)
 }
 
+watch(() => props.show, (newVal, oldVal) => { 
+    if(props.mode == 'edit') { 
+        question.question = props.selectedQuestion.question;
+        question.options = props.selectedQuestion.options;
+        question.id = props.selectedQuestion.id;
+        question.correctOption = props.selectedQuestion.correctOption;
+    }
+})
+
+
+
+
+
 </script>
+
 
 <style scoped>
 .options-list {

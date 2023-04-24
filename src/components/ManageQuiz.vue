@@ -87,14 +87,15 @@
             :mode="mode"
             :selectedQuestion = "selectedQuestion"
             @close-dialog="isQuestionDrawer = false" 
-            @save-question="questionSaved" />
+            @save-question="questionSaved"
+            @update-question="questionUpdate"
+            />
         <CommonAlert :alert="alert" />
     </div>
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue';
-import { ref } from 'vue';
+import { reactive, ref} from 'vue';
 import AddQuestion from '@/components/AddQuestion.vue';
 import CommonAlert from '@/components/Common/CommonAlert.vue'
 import  { defaultStore }  from '@/stores/default';
@@ -106,20 +107,34 @@ const router = useRouter();
 const route = useRoute();
 const store = defaultStore();
 
+let mode = ref(`create`);
 
+
+interface Quiz {
+    title: string;
+    level: string;
+    questions: Array<object>;
+}
+
+let quiz: Quiz = reactive({
+    title: '',
+    level: 'Easy',
+    questions: [],
+})
 
 if(route.params.id) { 
      getQuizById(route.params.id) 
+     mode.value = 'edit';
 }
 
 async function getQuizById() { 
     let response  = await store.getQuiz(route.params.id)
     if(response && response.length > 0) { 
+        quiz.id = response[0].id
         quiz.title = response[0].title;
         quiz.questions = response[0].questions;
         quiz.level = response[0].level;
     }
-    console.log("🚀 ~ file: ManageQuiz.vue:97 ~ getQuizById ~ response:", response)
 }
 
 
@@ -170,36 +185,40 @@ let actionOptions: Array<object> = reactive([
     },
 ]);
 
-interface Quiz {
-    title: string;
-    level: string;
-    questions: Array<object>;
-}
-
-let quiz: Quiz = reactive({
-    title: '',
-    level: 'Easy',
-    questions: [],
-})
-
 
 //Question Drawer
 let isQuestionDrawer = ref(false)
 
 function openQuestionDrawer() {
-    isQuestionDrawer.value = true
-
+    isQuestionDrawer.value = true;
+    selectedQuestion = {
+        options:[],
+        correctOption : null,
+        question : ''
+    };
 }
 
 function questionSaved(val) {
-    val.id = quiz.questions.length + 1;
     let copy = JSON.parse(JSON.stringify(val))
     quiz.questions.push(copy)
 }
 
-let mode = ref(`create`);
+function questionUpdate(val) { 
+    let updatingIndex = quiz.questions.findIndex(question => question.id === val.id)
+    let question = quiz.questions[updatingIndex];
+    if(updatingIndex >= 0) { 
+        question.id = val.id;
+        question.question = val.question;
+        question.options = val.options;
+        question.correctOption = val.correctOption;
+    }  else { 
+        let copy = JSON.parse(JSON.stringify(val))
+        quiz.questions.push(copy)
+    }
+}
 
-let selectedQuestion = reactive({
+
+let selectedQuestion : Object = reactive({
     id:null,
     options:[],
     correctOption : null,
@@ -207,7 +226,6 @@ let selectedQuestion = reactive({
 })
 
 let optionSelected = (item: string, question:object) => {
-    
     selectedQuestion = question;
     if (item.value === 'edit') {
         isQuestionDrawer.value = true;
@@ -232,23 +250,31 @@ const saveQuiz = async () => {
         alert.text = 'Please enter atleast one Question.'
     }
 
-    let status = await store.addQuiz(quiz)
-
-    if(status == 201) { 
-        alert.isTrue = true;
-        alert.color = 'green';
-        alert.text = 'Quiz Saved Successfully.'
-
-          //Clearing quiz values after saving
-        setTimeout(() => {
-            quiz.title =  ''
-            quiz.level = 'Easy'
-            quiz.questions = []
-
-            router.push('/')
-        }, 1000);
+    let status;
+    if(mode.value === 'edit') { 
+        quiz.id = Number(route.params.id);
+        status = await store.updateQuiz(quiz)
+    } else { 
+        status = await store.addQuiz(quiz)
     }
 
+    alert.isTrue = true;
+    alert.color = 'green';
+
+    if(status == 201) { 
+        alert.text = 'Quiz saved successfully.'
+    } else if(status == 204) { 
+        alert.text = `Quiz updated successfully`
+    }
+
+     //Clearing quiz values after saving
+     setTimeout(() => {
+        quiz.title =  ''
+        quiz.level = 'Easy'
+        quiz.questions = []
+
+        router.push('/')
+    }, 1000);
 }
 
 

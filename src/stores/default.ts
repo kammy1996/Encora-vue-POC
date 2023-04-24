@@ -57,6 +57,23 @@ export const defaultStore = defineStore('store', {
         } catch (error) {
             console.log("🚀 ~ file: default.ts:45 ~ deleteQuiz ~ error:", error)   
         }
+    },
+    async updateQuiz(quiz : object) { 
+        console.log("🚀 ~ file: default.ts:62 ~ updateQuiz ~ quiz:", quiz)
+        try {
+            const { data } = await supabase
+            .from('quiz_list')
+            .update({
+                title: quiz.title,
+                level: quiz.level ,
+                questions: quiz.questions
+            })
+            .eq(`id`, `${quiz.id}`)
+
+            return data;
+        } catch (error) {
+            console.log("🚀 ~ file: default.ts:45 ~ deleteQuiz ~ error:", error)   
+        }
     }
 },
     getters : { 
