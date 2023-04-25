@@ -20,9 +20,6 @@ let drawer = true;
           <router-link to="/manage">
             <v-list-item prepend-icon="mdi-plus" title="Create Quiz" value="create-quiz"></v-list-item>
           </router-link>
-          <router-link to="/">
-            <v-list-item prepend-icon="mdi-play-box" title="Play Quiz" value="play-quiz"></v-list-item>
-          </router-link>
         </v-list>
       </v-navigation-drawer>
 

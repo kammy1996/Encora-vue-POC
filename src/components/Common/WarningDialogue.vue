@@ -3,7 +3,7 @@
         <v-dialog v-model="props.show" persistent width="auto">
             <v-card class="px-5 py-3">
                 <h4 class="text-center mb-5">
-                    Are you sure you want to delete the quiz ?
+                    {{  props.text }}
                 </h4>
                 <div class="display-block mx-auto">
                     <v-card-actions class="text-center">
@@ -25,7 +25,8 @@
 import { defineProps } from 'vue';
 
 const props = defineProps<{
-    show: boolean
+    show: boolean,
+    text: string,
 }>();
 
 

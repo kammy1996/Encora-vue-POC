@@ -60,8 +60,16 @@
                 </tbody>
             </v-table>
         </div>
-        <WarningDialogue :show="isWarningDialogue" @delete-quiz="deleteQuiz" @close-dialog="isWarningDialogue = false" />
+        <WarningDialogue 
+            :show="isWarningDialogue" 
+            @delete-quiz="deleteQuiz" 
+            @close-dialog="isWarningDialogue = false"
+            :text="`Are you sure you want to delete this quiz?`"
+         />
         <CommonAlert :alert="alert" />
+        <OverlayProgress 
+            :show="isOverlay"
+        />
     </div>
 </template>
 
@@ -71,9 +79,12 @@ import { defaultStore } from '@/stores/default';
 import CommonAlert from '@/components/Common/CommonAlert.vue';
 import WarningDialogue from '@/components/Common/WarningDialogue.vue'
 import { useRouter } from 'vue-router';
+import OverlayProgress from '@/components/Common/OverlayProgress.vue';
+
 
 
 const store = defaultStore();
+let isOverlay = ref(false)
 let isWarningDialogue = ref(false)
 
 const router = useRouter();
@@ -96,8 +107,10 @@ const alert: Alert = reactive({
 
 async function getQuizList() {
     await store.fetchQuizList()
+    isOverlay.value = false
 }
 
+isOverlay.value = true
 getQuizList()
 
 const quizList = computed(() => {
@@ -120,13 +133,6 @@ let actionOptions: Array<object> = reactive([
         icon: 'mdi-delete'
 
     },
-    {
-        id: 3,
-        name: 'Play',
-        value: 'play',
-        icon: 'mdi-play-box',
-        path: '/play'
-    }
 ]);
 
 

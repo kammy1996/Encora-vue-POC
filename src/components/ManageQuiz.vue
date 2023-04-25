@@ -78,9 +78,12 @@
             <v-btn prepend-icon="mdi-check" color="success" class="mr-5" @click="saveQuiz">
                 Save
             </v-btn>
-            <v-btn @click="clearQuiz">
+
+            <router-link to="/">
+                <v-btn>
                 Cancel
             </v-btn>
+            </router-link>
         </div>
         <AddQuestion 
             :show="isQuestionDrawer" 
@@ -91,6 +94,15 @@
             @update-question="questionUpdate"
             />
         <CommonAlert :alert="alert" />
+        <OverlayProgress 
+            :show="isOverlay"
+        />
+        <WarningDialogue
+            :show="isWarningDialogue"
+            :text="`Are you sure you want to delete this question?`"
+            @delete-quiz="deleteQuestion"
+            @close-dialog="isWarningDialogue = false"
+        />
     </div>
 </template>
 
@@ -101,13 +113,21 @@ import CommonAlert from '@/components/Common/CommonAlert.vue'
 import  { defaultStore }  from '@/stores/default';
 import { useRouter } from 'vue-router';
 import { useRoute } from 'vue-router'
+import { v4 as uuidv4 } from 'uuid';
+import OverlayProgress from '@/components/Common/OverlayProgress.vue';
+import WarningDialogue from './Common/WarningDialogue.vue';
+
 
 
 const router = useRouter();
 const route = useRoute();
 const store = defaultStore();
 
+
 let mode = ref(`create`);
+let isOverlay = ref(false)
+let isWarningDialogue = ref(false);
+
 
 
 interface Quiz {
@@ -123,6 +143,7 @@ let quiz: Quiz = reactive({
 })
 
 if(route.params.id) { 
+     isOverlay.value = true;
      getQuizById(route.params.id) 
      mode.value = 'edit';
 }
@@ -135,6 +156,7 @@ async function getQuizById() {
         quiz.questions = response[0].questions;
         quiz.level = response[0].level;
     }
+    isOverlay.value = false;
 }
 
 
@@ -199,6 +221,7 @@ function openQuestionDrawer() {
 }
 
 function questionSaved(val) {
+    val.id =  uuidv4();
     let copy = JSON.parse(JSON.stringify(val))
     quiz.questions.push(copy)
 }
@@ -212,9 +235,18 @@ function questionUpdate(val) {
         question.options = val.options;
         question.correctOption = val.correctOption;
     }  else { 
+        val.id =  uuidv4();
         let copy = JSON.parse(JSON.stringify(val))
         quiz.questions.push(copy)
     }
+}
+
+function deleteQuestion() { 
+    let foundIndex = quiz.questions.findIndex(question => question.id  === selectedQuestion.id);
+    if(foundIndex != -1) { 
+        quiz.questions.splice(foundIndex, 1)
+    } 
+    isWarningDialogue.value = false;
 }
 
 
@@ -229,10 +261,9 @@ let optionSelected = (item: string, question:object) => {
     selectedQuestion = question;
     if (item.value === 'edit') {
         isQuestionDrawer.value = true;
-        mode.value = 'edit'
     } else if (item.value === 'delete') {
-
-    }
+        isWarningDialogue.value = true;
+  }
 }
 
 
@@ -241,31 +272,31 @@ const saveQuiz = async () => {
     if(!quiz.title || quiz.title == '') { 
         alert.isTrue = true;
         alert.color = 'red';
-        alert.text = 'Please Enter Quiz Title.'
+        alert.text = 'Please enter quiz title.'
+        return;
     }
 
     if(quiz.questions.length < 1) { 
         alert.isTrue = true;
         alert.color = 'red';
-        alert.text = 'Please enter atleast one Question.'
+        alert.text = 'Please enter at least one question.'
+        return;
     }
 
+    isOverlay.value = true;
     let status;
     if(mode.value === 'edit') { 
         quiz.id = Number(route.params.id);
         status = await store.updateQuiz(quiz)
+        alert.text = `Quiz updated successfully`
     } else { 
         status = await store.addQuiz(quiz)
+        alert.text = 'Quiz saved successfully.'
     }
 
+    isOverlay.value = false;
     alert.isTrue = true;
     alert.color = 'green';
-
-    if(status == 201) { 
-        alert.text = 'Quiz saved successfully.'
-    } else if(status == 204) { 
-        alert.text = `Quiz updated successfully`
-    }
 
      //Clearing quiz values after saving
      setTimeout(() => {

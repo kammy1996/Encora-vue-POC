@@ -103,12 +103,14 @@ const alert: Alert = reactive({
 
 //Questions interface 
 interface Question {
+    id:string,
     question: string;
     options: Array<object>;
     correctOption: number;
 }
 
 let question : Question = reactive({
+    id:'',
     question: '',
     options: [],
     correctOption: null
@@ -139,28 +141,34 @@ function clearOptions() {
 }
 
 function saveQuestion() {
-    //Check if correct option is submitted or not 
-    if (!question.correctOption) {
-        alert.isTrue = true;
-        alert.color = 'red';
-        alert.text = 'Please choose correct option.'
-    }
-
-
-    //Check if option is less than 1 
-    if (question.options.length < 2) {
-        alert.isTrue = true;
-        alert.color = 'red';
-        alert.text = 'Please add more than one option.'
-    }
 
     //If question is missing 
     if (!question.question) {
         alert.isTrue = true;
         alert.color = 'red';
         alert.text = 'Please Enter a valid question.'
+        return;
     }
 
+
+     //Check if option is less than 1 
+     if (question.options.length < 2) {
+        alert.isTrue = true;
+        alert.color = 'red';
+        alert.text = 'Please add more than one option.'
+        return;
+    }
+
+
+    //Check if correct option is submitted or not 
+    if (!question.correctOption) {
+        alert.isTrue = true;
+        alert.color = 'red';
+        alert.text = 'Please choose correct option.'
+        return;
+    }
+
+    
 
     if(props.mode === 'edit') { 
         emit(`update-question`, question)
@@ -169,17 +177,21 @@ function saveQuestion() {
     }
 
     setTimeout(() => {
-        question.correctOption = null;
-        question.id = null;
-        question.options = [];
-        question.question = ''   
+        clearQuestionValues();
     }, 2000);
     emit(`close-dialog`)
   
 }
 
+function clearQuestionValues() { 
+    question.correctOption = null;
+    question.id = null;
+    question.options = [];
+    question.question = '' 
+}
 
 function questionCancelled() {
+    clearQuestionValues();
     emit(`close-dialog`)
 }
 
